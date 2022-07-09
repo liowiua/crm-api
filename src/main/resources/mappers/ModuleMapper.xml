@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ag.crm.dao.ModuleMapper">
+
+  <resultMap id="BaseResultMap" type="com.ag.crm.domain.Module">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="title" jdbcType="VARCHAR" property="title" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="parent_id" jdbcType="INTEGER" property="parentId" />
+    <result column="grade" jdbcType="INTEGER" property="grade" />
+    <result column="opt_value" jdbcType="VARCHAR" property="optValue" />
+    <result column="hidden" jdbcType="INTEGER" property="hidden" />
+    <result column="sort" jdbcType="INTEGER" property="sort" />
+  </resultMap>
+
+  <sql id="moduleAll">
+    t_module.id, t_module.name, title ,url, parent_id, grade, opt_value, t_module.hidden, sort
+  </sql>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from t_module
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="insert" parameterType="com.ag.crm.domain.Module">
+    insert into t_module (id, name, parentId,
+      sort, level, title)
+    values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{parentid,jdbcType=INTEGER},
+      #{sort,jdbcType=INTEGER}, #{level,jdbcType=INTEGER}, #{title,jdbcType=VARCHAR})
+  </insert>
+
+  <update id="updateByPrimaryKey" parameterType="com.ag.crm.domain.Module">
+    update t_module
+    set name = #{name,jdbcType=VARCHAR},
+      parentId = #{parentid,jdbcType=INTEGER},
+      sort = #{sort,jdbcType=INTEGER},
+      level = #{level,jdbcType=INTEGER},
+      title = #{title,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="hideModule" parameterType="map">
+    update t_module
+    set hidden = #{hidden}
+    where id = #{id}
+  </update>
+
+  <select id="selectAllPermissionByRoleId" resultMap="BaseResultMap">
+    select <include refid="moduleAll"></include>
+    from t_permission, t_module
+    where t_permission.module_id = t_module.id  and t_permission.role_id = #{id}
+  </select>
+
+  <!--  通过用户ID查询-->
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select distinct <include refid="moduleAll"></include>
+    from t_user, t_user_role, t_role, t_permission, t_module
+    where t_user_role.user_id = #{id, jdbcType=INTEGER}
+    and t_user_role.role_id = t_role.id
+    and t_role.id = t_permission.role_id
+    and t_permission.module_id = t_module.id
+  </select>
+
+  <select id="selectIdByName" resultType="int">
+    select id
+    from t_module
+    where name = #{name}
+  </select>
+
+  <!--  查询所有-->
+  <select id="selectAll" resultMap="BaseResultMap">
+    select <include refid="moduleAll"></include>
+    from t_module
+  </select>
+</mapper>

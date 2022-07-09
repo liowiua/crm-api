@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ag.crm.dao.UserMapper">
+
+  <resultMap id="BaseResultMap" type="com.ag.crm.domain.User">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="user_pwd" jdbcType="VARCHAR" property="password" />
+    <result column="true_name" jdbcType="VARCHAR" property="trueName" />
+    <result column="email" jdbcType="VARCHAR" property="email" />
+    <result column="phone" jdbcType="VARCHAR" property="phone" />
+    <result column="is_valid" jdbcType="INTEGER" property="isValid" />
+    <result column="create_date" jdbcType="TIMESTAMP" property="createDate" />
+    <result column="update_date" jdbcType="TIMESTAMP" property="updateDate" />
+    <result column="avatar" jdbcType="VARCHAR" property="avatar" />
+  </resultMap>
+
+  <resultMap id="UserAndModulesResultMap" type="com.ag.crm.domain.UserDetailPermission">
+    <id column="id" property="id" jdbcType="INTEGER"  />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+      <collection property="modules" ofType="com.ag.crm.domain.Module"
+        select="com.ag.crm.dao.ModuleMapper.selectByUserId" column="{id = id}">
+      </collection>
+
+      <collection property="roles" ofType="String"
+        select="com.ag.crm.dao.RoleMapper.selectRoleNamesByUserId" column="{id = id}">
+      </collection>
+  </resultMap>
+
+  <resultMap id="UsersAndRolesResultMap" type="com.ag.crm.domain.UsersRoles">
+    <id column="id" property="id" jdbcType="INTEGER"  />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="true_name" jdbcType="VARCHAR" property="trueName" />
+    <result column="email" jdbcType="VARCHAR" property="email" />
+    <result column="phone" jdbcType="VARCHAR" property="phone" />
+    <result column="is_valid" jdbcType="INTEGER" property="isValid" />
+    <result column="create_date" jdbcType="TIMESTAMP" property="createDate" />
+    <result column="update_date" jdbcType="TIMESTAMP" property="updateDate" />
+
+    <collection property="roles" ofType="int"
+      select="com.ag.crm.dao.RoleMapper.selectRoleIdsByUserId" column="{id = id}">
+    </collection>
+  </resultMap>
+
+  <sql id="userAll">
+    id, user_name, user_pwd, true_name, email, phone, is_valid, create_date, update_date,
+    avatar
+  </sql>
+
+  <sql id="usersRoles">
+    id, user_name, true_name, email, phone, is_valid, create_date, update_date
+  </sql>
+
+  <delete id="deleteById" parameterType="java.lang.Integer">
+    delete from t_user
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <delete id="deleteUsersById">
+    delete from t_user
+    where id in
+    <foreach collection="list" item="id" open="(" close=")" separator=",">
+      #{id}
+    </foreach>
+  </delete>
+
+  <delete id="deleteUserAllRolesById" parameterType="java.lang.Integer">
+    delete from t_user_role
+    where user_id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="insertUser" parameterType="com.ag.crm.domain.User">
+    insert into t_user (id, user_name, user_pwd,
+      true_name, email, phone,
+      is_valid, create_date, update_date,
+      avatar)
+    values (#{id,jdbcType=INTEGER}, #{userName,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR},
+      #{trueName,jdbcType=VARCHAR}, #{email,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR},
+      #{isValid,jdbcType=INTEGER}, #{createDate,jdbcType=TIMESTAMP}, #{updateDate,jdbcType=TIMESTAMP},
+      #{avatar,jdbcType=VARCHAR})
+  </insert>
+
+  <insert id="insertUsersRoles" >
+    insert into t_user_role(user_id, role_id)
+    values
+    <foreach collection="list" item="userOneRole" separator=",">
+      (#{userOneRole.userId}, #{userOneRole.roleId})
+    </foreach>
+  </insert>
+
+  <update id="updateById" parameterType="com.ag.crm.domain.User">
+    update t_user
+    set user_name = #{userName,jdbcType=VARCHAR},
+      user_pwd = #{password,jdbcType=VARCHAR},
+      true_name = #{trueName,jdbcType=VARCHAR},
+      email = #{email,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      is_valid = #{isValid,jdbcType=INTEGER},
+      create_date = #{createDate,jdbcType=TIMESTAMP},
+      update_date = #{updateDate,jdbcType=TIMESTAMP},
+      avatar = #{avatar,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateAvatar" parameterType="String">
+    update t_user
+    set avatar = #{avatar,jdbcType=VARCHAR}
+    where user_name = #{user_name}
+  </update>
+
+  <select id="selectAll" resultMap="BaseResultMap">
+    select
+    <include refid="userAll"/>
+    from t_user
+  </select>
+
+  <!--  通过用户名查询角色 ！！ 校验密码！-->
+  <select id="selectByUserName" resultMap="BaseResultMap">
+    select
+    <include refid="userAll"/>
+    from t_user where user_name = #{user_name}
+  </select>
+
+  <!--  通过id查询name -->
+  <select id="selectUserNameById" resultType="String">
+    select user_name from t_user
+    where id = #{id}
+  </select>
+
+  <!--  通过name查询id -->
+  <select id="selectIdByUserName" resultType="int">
+    select id from t_user
+    where user_name = #{user_name}
+  </select>
+
+<!--  查询所有用户的角色-->
+  <select id="selectUsersRoles" resultMap="UsersAndRolesResultMap">
+    select
+    <include refid="usersRoles"/>
+    from t_user
+  </select>
+
+<!--  查询单用户信息模块权限-->
+  <select id="selectPermissionByUsername" parameterType="java.util.Map" resultMap="UserAndModulesResultMap">
+    select id, user_name
+    from t_user
+    where user_name = #{user_name}
+  </select>
+
+  <select id="selectUserNameByRoleName" parameterType="String"  resultType="String">
+    select user_name
+    from t_role,t_user,t_user_role
+    where t_role.role_name = #{name} and t_user.id = t_user_role.user_id
+        and t_user_role.role_id = t_role.id
+  </select>
+
+</mapper>

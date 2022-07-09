@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ag.crm.dao.RoleMapper">
+  <resultMap id="BaseResultMap" type="com.ag.crm.domain.Role">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="role_name" jdbcType="VARCHAR" property="roleName" />
+    <result column="role_remark" jdbcType="VARCHAR" property="roleRemark" />
+    <result column="create_date" jdbcType="TIMESTAMP" property="createDate" />
+    <result column="update_date" jdbcType="TIMESTAMP" property="updateDate" />
+    <result column="is_valid" jdbcType="INTEGER" property="isValid" />
+  </resultMap>
+
+  <delete id="deleteById" parameterType="java.lang.Integer">
+    delete from t_role
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <delete id="deletePermissionById" parameterType="java.lang.Integer">
+    delete from t_permission
+    where role_id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="insert" parameterType="com.ag.crm.domain.Role">
+    insert into t_role (id, role_name, role_remark,
+      create_date, update_date, is_valid
+      )
+    values (#{id,jdbcType=INTEGER}, #{roleName,jdbcType=VARCHAR}, #{roleRemark,jdbcType=VARCHAR},
+      #{createDate,jdbcType=TIMESTAMP}, #{updateDate,jdbcType=TIMESTAMP}, #{isValid,jdbcType=INTEGER}
+      )
+  </insert>
+
+
+  <!--  批量插入-->
+  <insert id="insertPermissions" >
+    insert into t_permission(role_id, module_id) values
+    <foreach collection="list" item="permission" separator=",">
+      (#{permission.roleId}, #{permission.moduleId})
+    </foreach>
+  </insert>
+
+  <insert id="insertUserAndRoles">
+    insert into t_user_role(user_id, role_id) values
+    <foreach collection="list" item="relationTable" separator = ",">
+      (#{relationTable.lid}, #{relationTable.rid})
+    </foreach>
+  </insert>
+
+  <delete id="deleteUserRoleByIds">
+    delete from t_user_role
+    where id in
+    <foreach collection="list" item="id" open="(" close=")" separator=",">
+      #{id}
+    </foreach>
+  </delete>
+
+  <update id="updateById" parameterType="com.ag.crm.domain.Role">
+    update t_role
+    set role_name = #{roleName,jdbcType=VARCHAR},
+      role_remark = #{roleRemark,jdbcType=VARCHAR},
+      create_date = #{createDate,jdbcType=TIMESTAMP},
+      update_date = #{updateDate,jdbcType=TIMESTAMP},
+      is_valid = #{isValid,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateUserRolesById" parameterType="int">
+    update t_role
+    set role_name = #{roleName,jdbcType=VARCHAR},
+      role_remark = #{roleRemark,jdbcType=VARCHAR},
+      create_date = #{createDate,jdbcType=TIMESTAMP},
+      update_date = #{updateDate,jdbcType=TIMESTAMP},
+      is_valid = #{isValid,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <select id="selectByUserId" resultMap="BaseResultMap">
+    select role_id, role_name, role_remark, t_role.create_date, t_role.update_date, is_valid
+    from t_user_role, t_role
+    where t_user_role.user_id = #{id,jdbcType=INTEGER}
+        and t_user_role.role_id = t_role.id
+  </select>
+
+  <select id="selectRoleNamesByUserId" resultType="String">
+    select role_name
+    from t_role
+    where id in
+			(select t_role.id
+			from t_user_role, t_user
+			where t_user.id = t_user_role.user_id and t_user.id = #{id,jdbcType=INTEGER})
+  </select>
+
+  <select id="selectUserRoleIdByUserId" resultType="Integer">
+    select id
+    from t_user_role
+    where user_id = #{id}
+  </select>
+
+  <select id="selectRoleIdsByUserId" resultType="int">
+    select id
+    from t_role
+    where id in
+			(select t_role.id
+			from t_user_role, t_user
+			where t_user.id = t_user_role.user_id and t_user.id = #{id,jdbcType=INTEGER})
+  </select>
+
+<!--  通过ID查询记录-->
+  <select id="selectById" resultType="com.ag.crm.domain.Role">
+    select * from t_role where id = #{id}
+  </select>
+
+<!--  通过ID查询角色名-->
+  <select id="selectRolesNameById" parameterType="java.lang.Integer" resultType="String">
+    select role_name
+    from t_role, t_user_role
+    where t_user_role.user_id = #{id} and t_user_role.role_id = t_role.id
+  </select>
+
+  <select id="selectAll" resultMap="BaseResultMap">
+    select id, role_name, role_remark, create_date, update_date, is_valid
+    from t_role
+  </select>
+
+  <select id="selectRoleNameByUserName" parameterType="String" resultType="String">
+    select role_name
+    from t_role,t_user,t_user_role
+    where t_user.user_name = #{name} and t_user.id = t_user_role.user_id
+        and t_user_role.role_id = t_role.id
+  </select>
+
+</mapper>
